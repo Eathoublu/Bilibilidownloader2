@@ -307,7 +307,7 @@ class DBProxy:
 
     def flag_one_author(self, mid):
         sql = """
-        UPDATE UPS SET SPIDER_DONE=1 WHERE MID={};
+        UPDATE UPS SET SPIDER_DONE=1 WHERE MID="{}";
         """.format(mid)
         sqlhandler = SQLHandler(self.db_path)
         sqlhandler.execute(sql)

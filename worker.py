@@ -55,14 +55,32 @@ class BlueSystem:
     """
     def __init__(self, db_path):
         self.db_path = db_path
+        self.findauthor = run
+        self.auto_utils = AutoUtils(db_path=self.db_path)
 
-    def
+    def get_seed(self, ups=[]):
+        for mid in tqdm(ups):
+            self.findauthor(mid, down_pics=False, db_path=self.db_path, down_loc=None)
+
+    def run(self):
+        while True:
+            mid = self.auto_utils.get_one_user()
+            self.findauthor(mid, down_pics=False, db_path=self.db_path)
+            self.auto_utils.flag_one_user_done(mid)
 
 
 def main():
     green_system = GreenSystem(db_path='GREEN.DB', user_dy_path='data/green/user_dynamics', video_down_path='data/green/videos')
     # green_system.find_ups(['12473905', ])
     green_system.run()
+
+
+def main_blue():
+    blue_system = BlueSystem(db_path='BLUE.DB')
+    blue_system.get_seed(['12473905', ])
+    blue_system.run()
+
 if __name__ == '__main__':
 
-    main()
+    # main()
+    main_blue()
