@@ -65,7 +65,7 @@ class BlueSystem:
     def run(self):
         while True:
             mid = self.auto_utils.get_one_user()
-            self.findauthor(mid, down_pics=False, db_path=self.db_path)
+            self.findauthor(mid, down_pics=False, db_path=self.db_path, down_loc=None)
             self.auto_utils.flag_one_user_done(mid)
 
 
@@ -77,7 +77,7 @@ def main():
 
 def main_blue():
     blue_system = BlueSystem(db_path='BLUE.DB')
-    blue_system.get_seed(['12473905', ])
+    # blue_system.get_seed(['13074237', ])
     blue_system.run()
 
 if __name__ == '__main__':
