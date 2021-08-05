@@ -168,7 +168,11 @@ class DBProxy:
 
     def see_table_author(self):
         sql = """
+<<<<<<< HEAD
+        SELECT COUNT(*) FROM AUTHOR;
+=======
         SELECT * FROM AUTHOR;
+>>>>>>> 927c3f4bee584bed3fc545a331de59d1395cc512
         """
         sqlhandler = SQLHandler(self.db_path)
         ret = sqlhandler.execute_return(sql)
@@ -288,7 +292,11 @@ class DBProxy:
 
     def see_table_ups(self):
         sql = """
+<<<<<<< HEAD
+            SELECT (SPIDER_DONE) FROM UPS;
+=======
             SELECT * FROM UPS;
+>>>>>>> 927c3f4bee584bed3fc545a331de59d1395cc512
             """
         sqlhandler = SQLHandler(self.db_path)
         ret = sqlhandler.execute_return(sql)
@@ -330,6 +338,18 @@ class DBProxy:
         sqlhandler = SQLHandler(self.db_path)
         sqlhandler.execute(sql)
 
+<<<<<<< HEAD
+    def flag_one_author_error(self, mid):
+        sql = """
+        UPDATE UPS SET SPIDER_DONE = 3 WHERE MID = "{}"
+        """.format(mid)
+        sqlhandler = SQLHandler(self.db_path)
+        sqlhandler.execute(sql)
+
+
+
+=======
+>>>>>>> 927c3f4bee584bed3fc545a331de59d1395cc512
 
     def init_new_database(self):
         logger('Initing new databases...')
@@ -362,6 +382,16 @@ if __name__ == '__main__':
     # see_table_follow()
     # create_table_video()
     # see_table_video()
+<<<<<<< HEAD
+    dbproxy = DBProxy('../BLUE.DB')
+    # dbproxy.see_table_author()
+    # dbproxy.see_table_follow()
+    dbproxy.see_table_dynamics()
+    # dbproxy.select_one_author()
+    # dbproxy.see_table_video()
+    # dbproxy.create_table_ups()
+    # dbproxy.see_table_ups()
+=======
     dbproxy = DBProxy('test2.db')
     # dbproxy.see_table_author()
     # dbproxy.see_table_follow()
@@ -369,6 +399,7 @@ if __name__ == '__main__':
     # dbproxy.see_table_video()
     # dbproxy.create_table_ups()
     dbproxy.see_table_ups()
+>>>>>>> 927c3f4bee584bed3fc545a331de59d1395cc512
     # dbproxy.see_table_dynamics()
     # TODO:目前动态只能下载其中的一张照片，需要修复,但是获取的过程是没有问题的，动态无法获取完全
     pass

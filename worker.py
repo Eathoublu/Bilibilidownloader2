@@ -60,11 +60,42 @@ class BlueSystem:
 
     def get_seed(self, ups=[]):
         for mid in tqdm(ups):
+<<<<<<< HEAD
+            self.findauthor(mid, down_pics=False, db_path=self.db_path, down_loc=None,
+                            get_img=False, get_collect=False, get_update=True)
+=======
             self.findauthor(mid, down_pics=False, db_path=self.db_path, down_loc=None)
+>>>>>>> 927c3f4bee584bed3fc545a331de59d1395cc512
 
     def run(self):
         while True:
             mid = self.auto_utils.get_one_user()
+<<<<<<< HEAD
+            try:
+                self.findauthor(mid, down_pics=False, db_path=self.db_path, down_loc=None, get_img=False, get_collect=False, get_update=True)
+                self.auto_utils.flag_one_user_done(mid)
+            except:
+                self.auto_utils.flag_one_err_author(mid)
+
+
+def main():
+    argument = argparse.ArgumentParser()
+    argument.add_argument('-s', '--seed-mid', default='``NULL``', type=str, help="Target user's mid (required).")
+    argument.add_argument('-d', '--db', default='GREEN.DB', type=str, help='Database path.')
+    argument.add_argument('-ud', '--user-dynamics', default='data/green/user_dynamics', type=str, help='User dynamic photos path.')
+    argument.add_argument('-vp', '--video-path', default='data/green/videos', type=str, help='User Videos path.')
+    argument.add_argument('-r', '--run', action='store_true', help='Enable Endless Running Mode. ')
+
+    args = argument.parse_args()
+
+    green_system = GreenSystem(db_path=args.db, user_dy_path=args.user_dynamics, video_down_path=args.video_path)
+    if args.seed_mid != '```NULL```':
+        green_system.find_ups([args.mid, ])
+    if args.run:
+        green_system.run()
+
+
+=======
             self.findauthor(mid, down_pics=False, db_path=self.db_path, down_loc=None)
             self.auto_utils.flag_one_user_done(mid)
 
@@ -73,14 +104,26 @@ def main():
     green_system = GreenSystem(db_path='GREEN.DB', user_dy_path='data/green/user_dynamics', video_down_path='data/green/videos')
     # green_system.find_ups(['12473905', ])
     green_system.run()
+>>>>>>> 927c3f4bee584bed3fc545a331de59d1395cc512
 
 
 def main_blue():
     blue_system = BlueSystem(db_path='BLUE.DB')
+<<<<<<< HEAD
+    blue_system.get_seed(['13074237', ])
+=======
     # blue_system.get_seed(['13074237', ])
+>>>>>>> 927c3f4bee584bed3fc545a331de59d1395cc512
     blue_system.run()
 
 if __name__ == '__main__':
 
+<<<<<<< HEAD
+    main()
+    # main_blue()
+
+    # TODO:新增在blue模式下卸载不必要信息的爬取系统
+=======
     # main()
     main_blue()
+>>>>>>> 927c3f4bee584bed3fc545a331de59d1395cc512
