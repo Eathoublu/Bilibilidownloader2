@@ -60,17 +60,12 @@ class BlueSystem:
 
     def get_seed(self, ups=[]):
         for mid in tqdm(ups):
-<<<<<<< HEAD
             self.findauthor(mid, down_pics=False, db_path=self.db_path, down_loc=None,
                             get_img=False, get_collect=False, get_update=True)
-=======
-            self.findauthor(mid, down_pics=False, db_path=self.db_path, down_loc=None)
->>>>>>> 927c3f4bee584bed3fc545a331de59d1395cc512
 
     def run(self):
         while True:
             mid = self.auto_utils.get_one_user()
-<<<<<<< HEAD
             try:
                 self.findauthor(mid, down_pics=False, db_path=self.db_path, down_loc=None, get_img=False, get_collect=False, get_update=True)
                 self.auto_utils.flag_one_user_done(mid)
@@ -95,35 +90,16 @@ def main():
         green_system.run()
 
 
-=======
-            self.findauthor(mid, down_pics=False, db_path=self.db_path, down_loc=None)
-            self.auto_utils.flag_one_user_done(mid)
-
-
-def main():
-    green_system = GreenSystem(db_path='GREEN.DB', user_dy_path='data/green/user_dynamics', video_down_path='data/green/videos')
-    # green_system.find_ups(['12473905', ])
-    green_system.run()
->>>>>>> 927c3f4bee584bed3fc545a331de59d1395cc512
 
 
 def main_blue():
     blue_system = BlueSystem(db_path='BLUE.DB')
-<<<<<<< HEAD
     blue_system.get_seed(['13074237', ])
-=======
-    # blue_system.get_seed(['13074237', ])
->>>>>>> 927c3f4bee584bed3fc545a331de59d1395cc512
     blue_system.run()
 
 if __name__ == '__main__':
 
-<<<<<<< HEAD
     main()
     # main_blue()
 
     # TODO:新增在blue模式下卸载不必要信息的爬取系统
-=======
-    # main()
-    main_blue()
->>>>>>> 927c3f4bee584bed3fc545a331de59d1395cc512

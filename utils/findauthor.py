@@ -80,10 +80,7 @@ def parse_content(content):
         basic_info_1 = content[0]['data']['list']['tlist']
     except:
         basic_info_1 = {}
-<<<<<<< HEAD
 
-=======
->>>>>>> 927c3f4bee584bed3fc545a331de59d1395cc512
     for pg in content:
         for v in pg['data']['list']['vlist']:
             # if v['mid'] == author_mid:
@@ -103,10 +100,7 @@ def parse_content(content):
                 }
             )
     # print(len(video_list))
-<<<<<<< HEAD
     # print(basic_info_1)
-=======
->>>>>>> 927c3f4bee584bed3fc545a331de59d1395cc512
     return video_list, basic_info_1
 
 def micro_dm(bvid, mid):
@@ -155,10 +149,7 @@ def parse_profile_info(info_1, info_2, info_3):
     """
     info_2 = info_2['data']
     curr = time.time()
-<<<<<<< HEAD
     logger('{} {}'.format(info_2['name'], info_2['sex']), type='USERNAME&SEX')
-=======
->>>>>>> 927c3f4bee584bed3fc545a331de59d1395cc512
     return {'follower':info_3['data']['follower'],
             'following':info_3['data']['following'],
             'mid': info_3['data']['mid'],
@@ -500,11 +491,7 @@ def get_collects(mid, db_proxy):
 
         # a = {'code': 0, 'message': '0', 'ttl': 1, 'data': {'count': 5, 'list': [{'id': 54038702, 'fid': 540387, 'mid': 42784402, 'attr': 0, 'title': '默认收藏夹', 'cover': 'http://i1.hdslb.com/bfs/archive/9675334a5bc93b878b1227a6d330eadb28acf5d8.jpg', 'upper': {'mid': 42784402, 'name': '', 'face': ''}, 'cover_type': 2, 'intro': '', 'ctime': 1474071821, 'mtime': 1583141921, 'state': 0, 'fav_state': 0, 'media_count': 1231, 'view_count': 0, 'type': 0, 'link': ''}, {'id': 702632802, 'fid': 7026328, 'mid': 42784402, 'attr': 22, 'title': 'ARRRRRRT', 'cover': 'http://i1.hdslb.com/bfs/archive/bf23ce6668c006844b0db17afed21855e5b45105.png', 'upper': {'mid': 42784402, 'name': '', 'face': ''}, 'cover_type': 2, 'intro': '', 'ctime': 1564984171, 'mtime': 1584847285, 'state': 0, 'fav_state': 0, 'media_count': 55, 'view_count': 0, 'type': 0, 'link': ''}, {'id': 846158702, 'fid': 8461587, 'mid': 42784402, 'attr': 22, 'title': '日常健身', 'cover': 'http://i2.hdslb.com/bfs/archive/64a46fcd19aeb36e08ccf9ef2f544f624dc83a7d.jpg', 'upper': {'mid': 42784402, 'name': '', 'face': ''}, 'cover_type': 2, 'intro': '', 'ctime': 1582552245, 'mtime': 1582552245, 'state': 0, 'fav_state': 0, 'media_count': 15, 'view_count': 0, 'type': 0, 'link': ''}, {'id': 422796602, 'fid': 4227966, 'mid': 42784402, 'attr': 22, 'title': '失眠福音', 'cover': 'http://i2.hdslb.com/bfs/archive/e44d129e9d20936a76a9f50a071c6e9da0f9ac75.jpg', 'upper': {'mid': 42784402, 'name': '', 'face': ''}, 'cover_type': 2, 'intro': '', 'ctime': 1555101870, 'mtime': 1556657480, 'state': 0, 'fav_state': 0, 'media_count': 13, 'view_count': 0, 'type': 0, 'link': ''}, {'id': 192468202, 'fid': 1924682, 'mid': 42784402, 'attr': 2, 'title': '学习', 'cover': 'http://i0.hdslb.com/bfs/archive/219731dbe48f2886cde76475e919c156c48d66bf.jpg', 'upper': {'mid': 42784402, 'name': '', 'face': ''}, 'cover_type': 2, 'intro': '', 'ctime': 1530062080, 'mtime': 1557818801, 'state': 0, 'fav_state': 0, 'media_count': 32, 'view_count': 0, 'type': 0, 'link': ''}], 'has_more': False}}
 
-<<<<<<< HEAD
 def act_find_author(mid, db_proxy, get_img=True):
-=======
-def act_find_author(mid, db_proxy):
->>>>>>> 927c3f4bee584bed3fc545a331de59d1395cc512
     raw_content, info_1 = get_author(mid)
     video_lst, _ = parse_content(raw_content)
     info_2 = get_profile(mid)
@@ -514,14 +501,10 @@ def act_find_author(mid, db_proxy):
     for k in info_d:
         if info_d[k] == '' or info_d[k] is None:
             info_d[k] = 'NULL'
-<<<<<<< HEAD
     if get_img:
         face, live_cover = save_imgs(info_d)
     else:
         face, live_cover = None, None
-=======
-    face, live_cover = save_imgs(info_d)
->>>>>>> 927c3f4bee584bed3fc545a331de59d1395cc512
     info_d['face_img'] = face
     info_d['cover_img'] = live_cover
     for k in info_d:
@@ -541,14 +524,10 @@ def act_find_author(mid, db_proxy):
         # print(dm)
         # quit()
         v['dm'] = dm
-<<<<<<< HEAD
         if get_img:
             cover_img = get_cover(v['pic'])
         else:
             cover_img = None
-=======
-        cover_img = get_cover(v['pic'])
->>>>>>> 927c3f4bee584bed3fc545a331de59d1395cc512
         v['cover'] = cover_img
         db_proxy.insert_table_video(v)
 
@@ -562,7 +541,6 @@ def act_find_author(mid, db_proxy):
             'video_dm': None
             }
 
-<<<<<<< HEAD
 def run(mid, down_pics, down_loc, db_path, get_update=True, get_collect=True, get_img=True):
     dbproxy = DBProxy(db_path)
     act_find_author(mid, dbproxy, get_img=get_img)
@@ -572,15 +550,6 @@ def run(mid, down_pics, down_loc, db_path, get_update=True, get_collect=True, ge
     get_his_follower(mid, dbproxy)
     if get_update:
         get_his_updates(mid, down_pics=down_pics, down_loc=down_loc, db_proxy=dbproxy)
-=======
-def run(mid, down_pics, down_loc, db_path):
-    dbproxy = DBProxy(db_path)
-    act_find_author(mid, dbproxy)
-    get_collects(mid, dbproxy)
-    get_his_following(mid, dbproxy)
-    get_his_follower(mid, dbproxy)
-    get_his_updates(mid, down_pics=down_pics, down_loc=down_loc, db_proxy=dbproxy)
->>>>>>> 927c3f4bee584bed3fc545a331de59d1395cc512
 
     pass
 
@@ -613,8 +582,4 @@ if __name__ == '__main__':
     # get_his_follower('42784402')
 
     dbproxy = DBProxy('test2.db')
-<<<<<<< HEAD
     get_his_updates(297344797, dbproxy, down_loc='temp2', down_pics=True)
-=======
-    get_his_updates(297344797, dbproxy, down_loc='temp2', down_pics=True)
->>>>>>> 927c3f4bee584bed3fc545a331de59d1395cc512

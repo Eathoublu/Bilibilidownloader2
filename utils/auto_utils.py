@@ -15,12 +15,9 @@ class AutoUtils:
     def get_one_vid(self,):
         return self.db_proxy.select_one_video()[0]
 
-<<<<<<< HEAD
     def flag_one_err_author(self, mid):
         return self.db_proxy.flag_one_author_error(mid)
 
-=======
->>>>>>> 927c3f4bee584bed3fc545a331de59d1395cc512
 
     def flag_one_user_done(self, mid):
         self.db_proxy.flag_one_author(mid)
