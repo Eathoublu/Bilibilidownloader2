@@ -44,3 +44,5 @@ data/*
 data/
 
 test.py
+
+*.sh
