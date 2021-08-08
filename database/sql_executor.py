@@ -7,6 +7,7 @@ class SQLHandler(object):
 
     def execute(self, sql):
          try:
+            # print(sql)
             self.cursor.execute(sql)
             self.db.commit()
          except sqlite3.IntegrityError:

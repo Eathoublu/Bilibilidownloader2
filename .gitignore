@@ -39,3 +39,8 @@ ENV/
 *.DB-*
 
 /data
+utils/*.log
+data/*
+data/
+
+test.py

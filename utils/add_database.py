@@ -288,7 +288,7 @@ class DBProxy:
 
     def see_table_ups(self):
         sql = """
-            SELECT (SPIDER_DONE) FROM UPS;
+            SELECT ID, SPIDER_DONE FROM UPS;
             """
         sqlhandler = SQLHandler(self.db_path)
         ret = sqlhandler.execute_return(sql)
@@ -338,6 +338,14 @@ class DBProxy:
         sqlhandler.execute(sql)
 
 
+    def db_handler(self):
+        sql = """
+        UPDATE UPS SET SPIDER_DONE = 0 WHERE ID >868;
+        """
+        sqlhandler = SQLHandler(self.db_path)
+        sqlhandler.execute(sql)
+
+
 
 
     def init_new_database(self):
@@ -374,11 +382,12 @@ if __name__ == '__main__':
     dbproxy = DBProxy('../BLUE.DB')
     # dbproxy.see_table_author()
     # dbproxy.see_table_follow()
-    dbproxy.see_table_dynamics()
+    # dbproxy.see_table_dynamics()
     # dbproxy.select_one_author()
     # dbproxy.see_table_video()
     # dbproxy.create_table_ups()
-    # dbproxy.see_table_ups()
+    dbproxy.see_table_ups()
+    # dbproxy.db_handler()
     # dbproxy.see_table_dynamics()
     # TODO:目前动态只能下载其中的一张照片，需要修复,但是获取的过程是没有问题的，动态无法获取完全
     pass

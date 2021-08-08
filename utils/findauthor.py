@@ -1,8 +1,9 @@
 import requests
 from tqdm import tqdm
 import time
+from random import random
 import os
-from utils.logger import logger
+from utils.logger import logger, err_logger
 from utils.add_database import DBProxy  # insert_table_author, insert_table_dynamics, insert_table_collections, insert_table_follow, insert_table_video
 # https://api.bilibili.com/x/space/acc/info?mid=297344797&jsonp=jsonp 用户个人信息
 
@@ -86,14 +87,14 @@ def parse_content(content):
             # if v['mid'] == author_mid:
             video_list.append(
                 {
-                    'author':v['author'],
+                    'author':sqlable(v['author']),
                     'mid':v['mid'],
-                    'title':v['title'],
+                    'title':sqlable(v['title']),
                     'comment':v['review'],
                     'pic':v['pic'],
                     'play':v['play'],
                     'created':v['created'],
-                    'description': v['description'],
+                    'description': sqlable(v['description']),
                     'length': v['length'],
                     'bvid':v['bvid'],
                     'aid':v['aid']
@@ -103,7 +104,7 @@ def parse_content(content):
     # print(basic_info_1)
     return video_list, basic_info_1
 
-def micro_dm(bvid, mid):
+def micro_dm(bvid, mid, max_try=10):
     headers = {
     'accept': '*/*',
 'accept-encoding': 'deflate',
@@ -118,7 +119,28 @@ def micro_dm(bvid, mid):
 'sec-fetch-site': 'same-site',
 'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.164 Safari/537.36'}
     url = 'https://api.bilibili.com/x/v2/dm/ajax?aid={}'.format(bvid)
-    req = requests.get(url, headers=headers)
+    try_time = 0
+    req = None
+    while True:
+        try:
+            req = requests.get(url, headers=headers, timeout=3)
+        except:
+            logger('获取弹幕时出现问题，正重试...')
+            time.sleep(random() * 5 + random())
+            pass
+
+        try_time += 1
+        if try_time > max_try:
+            break
+    if req is None:
+        err_logger(err_msg='Danmaku get failed.', _id=bvid, err_code=1)
+        raise Exception('DanmakuGetErr')
+
+
+
+
+
+
     return eval(req.text.replace('null', 'None').replace('false', 'False').replace('true', 'True'))['data']
 
 def fans_stat(mid):
@@ -147,6 +169,16 @@ def parse_profile_info(info_1, info_2, info_3):
     :param info_3: from fans stat
     :return:
     """
+    # print(info_2)
+    # print(info_1)
+    # print(info_3)
+    # quit()
+    if 'code' in info_2:
+        if info_2['code'] == -404:
+            logger('用户不存在')
+            err_logger('UserNotFound', err_code=3, _id=info_3['data']['mid'])
+            # raise Exception('UserNotFoundError')
+            return False
     info_2 = info_2['data']
     curr = time.time()
     logger('{} {}'.format(info_2['name'], info_2['sex']), type='USERNAME&SEX')
@@ -186,7 +218,7 @@ def get_cover(url):
     cover = requests.get(url)
     return cover.content
 
-def get_his_following(mid, db_proxy):
+def get_his_following(mid, db_proxy, max_try=10):
     """
 
     :param mid: up
@@ -211,14 +243,35 @@ def get_his_following(mid, db_proxy):
     pn = 1
     following = []
     while True:
-
-        req = requests.get(url=basic_url.format(mid, pn), headers=headers)
+        # try:
+        req = None
+        for _ in range(max_try):
+            try:
+                req = requests.get(url=basic_url.format(mid, pn), headers=headers)
+            except:
+                time.sleep(random()*5+random())
+                pass
+        if req is None:
+            logger('获取用户following失败！')
+            err_logger(err_msg='GetFollowingErr', _id=mid, err_code=0)
+            raise Exception('GetFollowingErr')
         content = eval(evalable(req.text))
+        # print(content)
+        # quit()
+        if content['code'] == -412 or content['code'] == 22115:
+            logger('获取用户following时请求被拦截，可能由于他并没有following')
+            err_logger(err_msg='FollowingGetErr', err_code=0, _id=mid)
+            return None
         for u in content['data']['list']:
             following.append({mid:u['mid']})
         pn += 1
         if pn > 5:
             break
+        # except Exception as e:
+        #     logger('获取用户following失败！')
+        #     err_logger(err_msg='{}'.format(e), _id=mid, err_code=0)
+        #     break
+
 
     # print(following)
     # print(len(following))
@@ -228,7 +281,7 @@ def get_his_following(mid, db_proxy):
 
     return following
 
-def get_his_follower(mid, db_proxy):
+def get_his_follower(mid, db_proxy, max_try=10):
     """
 
     :param mid:up
@@ -258,9 +311,23 @@ def get_his_follower(mid, db_proxy):
     pn = 1
     follower = []
     while True:
-
-        req = requests.get(url=basic_url.format(mid, pn), headers=headers)
+        req = None
+        for try_time in range(0, max_try):
+            try:
+                req = requests.get(url=basic_url.format(mid, pn), headers=headers)
+            except:
+                pass
+        if req is None:
+            logger('获取用户follower失败！')
+            err_logger(err_msg='FollowerGetErr', err_code=2, _id=mid)
+            raise Exception('FollowerGetErr')
         content = eval(evalable(req.text))
+        # print(content)
+        if content['code'] == -412 or content['code'] == 22115:
+            logger('获取用户follower时请求被拦截，可能由于他并没有follower')
+            err_logger(err_msg='FollowerGetErr', err_code=2, _id=mid)
+            return None
+        # quit()
         for u in content['data']['list']:
             follower.append({mid: u['mid']})
         pn += 1
@@ -272,7 +339,7 @@ def get_his_follower(mid, db_proxy):
     logger('Inserting followers 2...')
     for p in tqdm(follower):
         db_proxy.insert_table_follow(p[mid], mid)
-    #
+
     return follower
 
     pass
@@ -491,12 +558,14 @@ def get_collects(mid, db_proxy):
 
         # a = {'code': 0, 'message': '0', 'ttl': 1, 'data': {'count': 5, 'list': [{'id': 54038702, 'fid': 540387, 'mid': 42784402, 'attr': 0, 'title': '默认收藏夹', 'cover': 'http://i1.hdslb.com/bfs/archive/9675334a5bc93b878b1227a6d330eadb28acf5d8.jpg', 'upper': {'mid': 42784402, 'name': '', 'face': ''}, 'cover_type': 2, 'intro': '', 'ctime': 1474071821, 'mtime': 1583141921, 'state': 0, 'fav_state': 0, 'media_count': 1231, 'view_count': 0, 'type': 0, 'link': ''}, {'id': 702632802, 'fid': 7026328, 'mid': 42784402, 'attr': 22, 'title': 'ARRRRRRT', 'cover': 'http://i1.hdslb.com/bfs/archive/bf23ce6668c006844b0db17afed21855e5b45105.png', 'upper': {'mid': 42784402, 'name': '', 'face': ''}, 'cover_type': 2, 'intro': '', 'ctime': 1564984171, 'mtime': 1584847285, 'state': 0, 'fav_state': 0, 'media_count': 55, 'view_count': 0, 'type': 0, 'link': ''}, {'id': 846158702, 'fid': 8461587, 'mid': 42784402, 'attr': 22, 'title': '日常健身', 'cover': 'http://i2.hdslb.com/bfs/archive/64a46fcd19aeb36e08ccf9ef2f544f624dc83a7d.jpg', 'upper': {'mid': 42784402, 'name': '', 'face': ''}, 'cover_type': 2, 'intro': '', 'ctime': 1582552245, 'mtime': 1582552245, 'state': 0, 'fav_state': 0, 'media_count': 15, 'view_count': 0, 'type': 0, 'link': ''}, {'id': 422796602, 'fid': 4227966, 'mid': 42784402, 'attr': 22, 'title': '失眠福音', 'cover': 'http://i2.hdslb.com/bfs/archive/e44d129e9d20936a76a9f50a071c6e9da0f9ac75.jpg', 'upper': {'mid': 42784402, 'name': '', 'face': ''}, 'cover_type': 2, 'intro': '', 'ctime': 1555101870, 'mtime': 1556657480, 'state': 0, 'fav_state': 0, 'media_count': 13, 'view_count': 0, 'type': 0, 'link': ''}, {'id': 192468202, 'fid': 1924682, 'mid': 42784402, 'attr': 2, 'title': '学习', 'cover': 'http://i0.hdslb.com/bfs/archive/219731dbe48f2886cde76475e919c156c48d66bf.jpg', 'upper': {'mid': 42784402, 'name': '', 'face': ''}, 'cover_type': 2, 'intro': '', 'ctime': 1530062080, 'mtime': 1557818801, 'state': 0, 'fav_state': 0, 'media_count': 32, 'view_count': 0, 'type': 0, 'link': ''}], 'has_more': False}}
 
-def act_find_author(mid, db_proxy, get_img=True):
+def act_find_author(mid, db_proxy, get_img=True, vid_limit=None):
     raw_content, info_1 = get_author(mid)
     video_lst, _ = parse_content(raw_content)
     info_2 = get_profile(mid)
     info_3 = fans_stat(mid)
     info_d = parse_profile_info(info_1, info_2, info_3)
+    if info_d is False:
+        return False
     # print(info_d)
     for k in info_d:
         if info_d[k] == '' or info_d[k] is None:
@@ -519,7 +588,11 @@ def act_find_author(mid, db_proxy, get_img=True):
     # quit()
     # return
     logger('Inserting videos...')
-    for v in tqdm(video_lst):
+    for v in tqdm(video_lst[:vid_limit]):
+        # print(v)
+        v['title'] = sqlable(v['title'])
+        # print(v['title'])
+
         dm = micro_dm(v['bvid'], mid)
         # print(dm)
         # quit()
@@ -541,9 +614,10 @@ def act_find_author(mid, db_proxy, get_img=True):
             'video_dm': None
             }
 
-def run(mid, down_pics, down_loc, db_path, get_update=True, get_collect=True, get_img=True):
+def run(mid, down_pics, down_loc, db_path, get_update=True, get_collect=True, get_img=True, vid_limit=20):
     dbproxy = DBProxy(db_path)
-    act_find_author(mid, dbproxy, get_img=get_img)
+    if act_find_author(mid, dbproxy, get_img=get_img, vid_limit=vid_limit) is False:
+        return dbproxy.flag_one_author_error(mid)
     if get_collect:
         get_collects(mid, dbproxy)
     get_his_following(mid, dbproxy)

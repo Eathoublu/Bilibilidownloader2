@@ -1,4 +1,4 @@
-from utils.logger import logger
+from utils.logger import logger, err_logger
 from utils.auto_utils import AutoUtils
 from utils.findauthor import run
 from utils.downloader_manager import executor, single_video
@@ -61,16 +61,16 @@ class BlueSystem:
     def get_seed(self, ups=[]):
         for mid in tqdm(ups):
             self.findauthor(mid, down_pics=False, db_path=self.db_path, down_loc=None,
-                            get_img=False, get_collect=False, get_update=True)
+                            get_img=False, get_collect=False, get_update=True, vid_limit=20)
 
     def run(self):
         while True:
-            mid = self.auto_utils.get_one_user()
-            try:
-                self.findauthor(mid, down_pics=False, db_path=self.db_path, down_loc=None, get_img=False, get_collect=False, get_update=True)
+                mid = self.auto_utils.get_one_user()
+            # try:
+                self.findauthor(mid, down_pics=False, db_path=self.db_path, down_loc=None, get_img=False, get_collect=False, get_update=True, vid_limit=20)
                 self.auto_utils.flag_one_user_done(mid)
-            except:
-                self.auto_utils.flag_one_err_author(mid)
+            # except:
+            #     self.auto_utils.flag_one_err_author(mid)
 
 
 def main():
@@ -94,12 +94,12 @@ def main():
 
 def main_blue():
     blue_system = BlueSystem(db_path='BLUE.DB')
-    blue_system.get_seed(['13074237', ])
+    # blue_system.get_seed(['13074237', ])
     blue_system.run()
 
 if __name__ == '__main__':
 
-    main()
-    # main_blue()
+    # main()
+    main_blue()
 
     # TODO:新增在blue模式下卸载不必要信息的爬取系统
