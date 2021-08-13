@@ -9,6 +9,7 @@ def err_logger(err_msg, _id, err_code=0, err_log_path='err.log'):
     0: following err
     1: danmaku err
     2: follower err
+    3:
 
     :param err_msg:
     :param _id:

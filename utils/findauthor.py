@@ -1,18 +1,39 @@
 import requests
 from tqdm import tqdm
 import time
-from random import random
+from random import random, choice
 import os
 from utils.logger import logger, err_logger
 from utils.add_database import DBProxy  # insert_table_author, insert_table_dynamics, insert_table_collections, insert_table_follow, insert_table_video
 # https://api.bilibili.com/x/space/acc/info?mid=297344797&jsonp=jsonp 用户个人信息
+
+# def take_breaks():
+    # time.sleep(20*60)
+
+
+# following status
+SLEEP_TIME = 20*60
+
+get_following = True
+stop_time = 0
+
+
+
+def get_agent():
+    # return choice([
+    #     'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.164 Safari/537.36',
+    #     'Mozilla/5.0 (compatible; MSIE 9.0; Windows NT 6.1; Trident/5.0;',
+    #     'Opera/9.80 (Macintosh; Intel Mac OS X 10.6.8; U; en) Presto/2.8.131 Version/11.11',
+    #     'Mozilla/4.0 (compatible; MSIE 7.0; Windows NT 5.1; Maxthon 2.0)'
+    # ])
+    return 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.164 Safari/537.36'
 
 
 def evalable(text):
     return str(text).replace('false', 'False').replace('true', 'True').replace('null', 'None')
 
 def sqlable(text):
-    return text.replace('"', '·').replace('|', '、')
+    return text.replace('"', '·').replace('|', '、').replace('\"', '·')
 
 def pathable(text):
     return text.replace('/', '-').replace('(', '[').replace(')', ']').replace('\\', '-')
@@ -64,7 +85,12 @@ def get_author(mid):
     info_1 = {}
     while True:
         content = get_raw_single_page(mid, page)
-        if content['data']['list']['tlist'] is not None:
+        # print(content)
+        # quit()
+        if 'data' not in content:
+            err_logger('GetRelationErr', _id=mid, err_code=3)
+            break
+        if content and content['data']['list']['tlist'] is not None:
             raw_content.append(content)
             if page == 1:
                 info_1 = content['data']['list']['tlist']
@@ -181,7 +207,10 @@ def parse_profile_info(info_1, info_2, info_3):
             return False
     info_2 = info_2['data']
     curr = time.time()
-    logger('{} {}'.format(info_2['name'], info_2['sex']), type='USERNAME&SEX')
+    try:
+        logger('{} {} {}'.format(info_2['name'], info_2['sex'], info_3['data']['mid']), type='USERNAME&SEX&MID')
+    except:
+        return False
     return {'follower':info_3['data']['follower'],
             'following':info_3['data']['following'],
             'mid': info_3['data']['mid'],
@@ -189,7 +218,7 @@ def parse_profile_info(info_1, info_2, info_3):
             'name': info_2['name'],
             'sex': info_2['sex'],
             'face': info_2['face'],
-            'sign': info_2['sign'],
+            'sign': sqlable(info_2['sign']),
             'rank': info_2['rank'],
             'level': info_2['level'],
             'jointime': info_2['jointime'],
@@ -219,6 +248,96 @@ def get_cover(url):
     return cover.content
 
 def get_his_following(mid, db_proxy, max_try=10):
+    global get_following, stop_time
+
+    """
+
+    :param mid: up
+    :return: <mid list>
+    """
+
+    if not get_following and int(time.time()) - stop_time < SLEEP_TIME:
+        return False
+    else:
+        get_following = True
+        stop_time = 0
+
+    headers = {
+        'accept': '*/*',
+'accept-encoding': 'deflate',
+'accept-language': 'zh-CN,zh;q=0.9',
+'cache-control': 'no-cache',
+# 'cookie': "buvid3=2CD0AEF0-B134-3D0E-2811-B8761ABC5C6439485infoc; _uuid=45F1ECFC-CF41-5057-7B0F-A98059E33DF741329infoc; sid=jmqvgyjb; CURRENT_FNVAL=80; blackside_state=1; rpdid=|(u))lJm~J)u0J'uYk~JYu)mm; fingerprint=633bee25f908ecc914be5cb23d475c7e; buvid_fp=2CD0AEF0-B134-3D0E-2811-B8761ABC5C6439485infoc; buvid_fp_plain=2CD0AEF0-B134-3D0E-2811-B8761ABC5C6439485infoc; PVID=1; bfe_id=1bad38f44e358ca77469025e0405c4a6",
+'pragma': 'no-cache',
+'referer': 'https://space.bilibili.com/{}/fans/follow'.format(mid),
+'sec-ch-ua': '" Not;A Brand";v="99", "Google Chrome";v="91", "Chromium";v="91"',
+'sec-ch-ua-mobile': '?0',
+'sec-fetch-dest': 'script',
+'sec-fetch-mode': 'no-cors',
+'sec-fetch-site': 'same-site',
+'user-agent': get_agent()
+    }
+    basic_url = 'https://api.bilibili.com/x/relation/followings?vmid={}&pn={}&ps=20&order=desc&jsonp=jsonp'
+    pn = 1
+    following = []
+    while True:
+        # try:
+        secret = False
+        req = None
+        for _ in range(max_try):
+            try:
+                req = requests.get(url=basic_url.format(mid, pn), headers=headers)
+                content = eval(evalable(req.text))
+                # print(content)
+                # quit()
+                if content['code'] == -412:
+                    print(content)
+                    logger('获取用户following时请求被拦截,冷却中...')
+                    err_logger(err_msg='FollowingGetErr', err_code=0, _id=mid)
+                    # return None
+                    stop_time = int(time.time())
+                    get_following = False
+                    return False
+                    # time.sleep(random() * 5 + random()+20*60)
+                    # continue
+                if content['code'] == 22115:
+                    logger('获取用户following时请求被拦截，他设置了隐私。')
+                    secret = True
+                    break
+                for u in content['data']['list']:
+                    following.append({mid: u['mid']})
+                break
+            except:
+                time.sleep(random()*5+random())
+                pass
+            if secret:
+                break
+        if req is None:
+            logger('获取用户following失败！')
+            err_logger(err_msg='GetFollowingErr', _id=mid, err_code=0)
+            raise Exception('GetFollowingErr')
+        pn += 1
+        if pn > 5:
+            break
+        if secret:
+            break
+        # except Exception as e:
+        #     logger('获取用户following失败！')
+        #     err_logger(err_msg='{}'.format(e), _id=mid, err_code=0)
+        #     break
+
+
+    # print(following)
+    # print(len(following))
+    logger('Inserting followings...')
+    # print(following)
+    # quit()
+    for p in tqdm(following):
+        db_proxy.insert_table_follow(mid, p[mid])
+
+    return following
+
+def get_his_follower(mid, db_proxy, max_try=10):
     """
 
     :param mid: up
@@ -237,36 +356,40 @@ def get_his_following(mid, db_proxy, max_try=10):
 'sec-fetch-dest': 'script',
 'sec-fetch-mode': 'no-cors',
 'sec-fetch-site': 'same-site',
-'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.164 Safari/537.36'
+'user-agent': get_agent()
     }
-    basic_url = 'https://api.bilibili.com/x/relation/followings?vmid={}&pn={}&ps=20&order=desc&jsonp=jsonp'
+    basic_url = 'https://api.bilibili.com/x/relation/followers?vmid={}&pn={}&ps=20&order=desc&jsonp=jsonp'
     pn = 1
-    following = []
+    follower = []
     while True:
         # try:
         req = None
         for _ in range(max_try):
             try:
                 req = requests.get(url=basic_url.format(mid, pn), headers=headers)
+                content = eval(evalable(req.text))
+                # print(content)
+                # quit()
+                if content['code'] == -412 or content['code'] == 22115:
+                    logger('获取用户following时请求被拦截，可能由于他并没有follower,重试中...')
+                    # err_logger(err_msg='FollowingGetErr', err_code=0, _id=mid)
+                    # return None
+                    time.sleep(random() * 5 + random() + 20*60)
+                    continue
+                for u in content['data']['list']:
+                    follower.append({mid: u['mid']})
+                break
             except:
                 time.sleep(random()*5+random())
                 pass
         if req is None:
-            logger('获取用户following失败！')
+            logger('获取用户follower失败！')
             err_logger(err_msg='GetFollowingErr', _id=mid, err_code=0)
             raise Exception('GetFollowingErr')
-        content = eval(evalable(req.text))
-        # print(content)
-        # quit()
-        if content['code'] == -412 or content['code'] == 22115:
-            logger('获取用户following时请求被拦截，可能由于他并没有following')
-            err_logger(err_msg='FollowingGetErr', err_code=0, _id=mid)
-            return None
-        for u in content['data']['list']:
-            following.append({mid:u['mid']})
         pn += 1
         if pn > 5:
             break
+
         # except Exception as e:
         #     logger('获取用户following失败！')
         #     err_logger(err_msg='{}'.format(e), _id=mid, err_code=0)
@@ -276,12 +399,12 @@ def get_his_following(mid, db_proxy, max_try=10):
     # print(following)
     # print(len(following))
     logger('Inserting followers...')
-    for p in tqdm(following):
+    for p in tqdm(follower):
         db_proxy.insert_table_follow(mid, p[mid])
 
-    return following
+    return follower
 
-def get_his_follower(mid, db_proxy, max_try=10):
+def get_his_follower_v0(mid, db_proxy, max_try=10):
     """
 
     :param mid:up
@@ -305,7 +428,7 @@ def get_his_follower(mid, db_proxy, max_try=10):
         'sec-fetch-dest': 'script',
         'sec-fetch-mode': 'no-cors',
         'sec-fetch-site': 'same-site',
-        'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.164 Safari/537.36'
+        'user-agent': get_agent()
     }
     basic_url = 'https://api.bilibili.com/x/relation/followers?vmid={}&pn={}&ps=20&order=desc&jsonp=jsonp'
     pn = 1
@@ -324,6 +447,7 @@ def get_his_follower(mid, db_proxy, max_try=10):
         content = eval(evalable(req.text))
         # print(content)
         if content['code'] == -412 or content['code'] == 22115:
+            # print(content)
             logger('获取用户follower时请求被拦截，可能由于他并没有follower')
             err_logger(err_msg='FollowerGetErr', err_code=2, _id=mid)
             return None
@@ -366,15 +490,18 @@ def get_his_updates(mid, db_proxy, down_pics=False, down_loc='temp/ups'):
     name = None
     logger('Now downloading dynamics...')
     while True:
-        print('##', end='')
-        req = requests.get(url, headers=headers)
-        dy_content = eval(evalable(req.text))
-        # print(dy_content)
-        # quit()
-        dynamics.append(dy_content)
-        if dy_content['data']['next_offset']:
-            url = 'https://api.vc.bilibili.com/dynamic_svr/v1/dynamic_svr/space_history?visitor_uid=0&host_uid={}&offset_dynamic_id={}&need_top=1&platform=web'.format(mid, dy_content['data']['next_offset'])
-        else:
+        try:
+            print('##', end='')
+            req = requests.get(url, headers=headers)
+            dy_content = eval(evalable(req.text))
+            # print(dy_content)
+            # quit()
+            dynamics.append(dy_content)
+            if dy_content and dy_content['data']['next_offset']:
+                url = 'https://api.vc.bilibili.com/dynamic_svr/v1/dynamic_svr/space_history?visitor_uid=0&host_uid={}&offset_dynamic_id={}&need_top=1&platform=web'.format(mid, dy_content['data']['next_offset'])
+            else:
+                break
+        except:
             break
     # print(len(dynamics))
     # quit()
