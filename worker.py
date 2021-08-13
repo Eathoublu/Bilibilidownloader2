@@ -68,7 +68,6 @@ class BlueSystem:
                 mid = self.auto_utils.get_one_user()
             # try:
                 self.findauthor(mid, down_pics=False, db_path=self.db_path, down_loc=None, get_img=False, get_collect=False, get_update=True, vid_limit=20)
-                self.auto_utils.flag_one_user_done(mid)
             # except:
             #     self.auto_utils.flag_one_err_author(mid)
 

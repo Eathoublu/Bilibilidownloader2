@@ -17,6 +17,10 @@ SLEEP_TIME = 20*60
 get_following = True
 stop_time = 0
 
+get_follower = True
+follower_stop_time = 0
+
+
 
 
 def get_agent():
@@ -187,7 +191,7 @@ def fans_stat(mid):
     req = requests.get(url, headers=headers)
     return eval(req.text.replace('null', 'None').replace('false', 'False').replace('true', 'True'))
 
-def parse_profile_info(info_1, info_2, info_3):
+def parse_profile_info(info_1, info_2, info_3, mid):
     """
 
     :param info_1: from 视频目录
@@ -202,18 +206,20 @@ def parse_profile_info(info_1, info_2, info_3):
     if 'code' in info_2:
         if info_2['code'] == -404:
             logger('用户不存在')
-            err_logger('UserNotFound', err_code=3, _id=info_3['data']['mid'])
+            err_logger('UserNotFound', err_code=3, _id=mid)
             # raise Exception('UserNotFoundError')
             return False
     info_2 = info_2['data']
     curr = time.time()
     try:
-        logger('{} {} {}'.format(info_2['name'], info_2['sex'], info_3['data']['mid']), type='USERNAME&SEX&MID')
+    # print(info_2, info_3)
+        logger('{} {} {}'.format(info_2['name'], info_2['sex'], mid), type='USERNAME&SEX&MID')
     except:
         return False
-    return {'follower':info_3['data']['follower'],
-            'following':info_3['data']['following'],
-            'mid': info_3['data']['mid'],
+    return {
+        'follower':info_3['data']['follower'] if info_3['data'] is not None else 'NULL',
+            'following':info_3['data']['following'] if info_3['data'] is not None else 'NULL',
+            'mid': mid,
             'key_words': [info_1[k]['name'] for k in info_1],
             'name': info_2['name'],
             'sex': info_2['sex'],
@@ -257,6 +263,7 @@ def get_his_following(mid, db_proxy, max_try=10):
     """
 
     if not get_following and int(time.time()) - stop_time < SLEEP_TIME:
+        logger('Following finder is sleeping.')
         return False
     else:
         get_following = True
@@ -338,6 +345,17 @@ def get_his_following(mid, db_proxy, max_try=10):
     return following
 
 def get_his_follower(mid, db_proxy, max_try=10):
+    global get_follower, follower_stop_time
+
+    if not get_follower and int(time.time()) - follower_stop_time < SLEEP_TIME:
+        logger('Follower finder is sleeping.')
+        return False
+    else:
+        get_follower = True
+        follower_stop_time = 0
+
+
+
     """
 
     :param mid: up
@@ -364,24 +382,34 @@ def get_his_follower(mid, db_proxy, max_try=10):
     while True:
         # try:
         req = None
+        secret = False
         for _ in range(max_try):
             try:
                 req = requests.get(url=basic_url.format(mid, pn), headers=headers)
                 content = eval(evalable(req.text))
                 # print(content)
                 # quit()
-                if content['code'] == -412 or content['code'] == 22115:
-                    logger('获取用户following时请求被拦截，可能由于他并没有follower,重试中...')
+                if content['code'] == 22115:
+                    logger('获取用户follower时请求被拦截，他设置了隐私。')
+                    secret = True
+                    break
+
+                if content['code'] == -412:
+                    logger('获取用户follower时请求被拦截,冷却中...')
                     # err_logger(err_msg='FollowingGetErr', err_code=0, _id=mid)
                     # return None
-                    time.sleep(random() * 5 + random() + 20*60)
-                    continue
+                    # time.sleep(random() * 5 + random() + 20*60)
+                    follower_stop_time = int(time.time())
+                    get_follower = False
+                    return False
                 for u in content['data']['list']:
                     follower.append({mid: u['mid']})
                 break
             except:
                 time.sleep(random()*5+random())
                 pass
+        if secret:
+            return False
         if req is None:
             logger('获取用户follower失败！')
             err_logger(err_msg='GetFollowingErr', _id=mid, err_code=0)
@@ -690,7 +718,9 @@ def act_find_author(mid, db_proxy, get_img=True, vid_limit=None):
     video_lst, _ = parse_content(raw_content)
     info_2 = get_profile(mid)
     info_3 = fans_stat(mid)
-    info_d = parse_profile_info(info_1, info_2, info_3)
+    info_d = parse_profile_info(info_1, info_2, info_3, mid)
+    # print(info_d)
+    # quit()
     if info_d is False:
         return False
     # print(info_d)
@@ -751,6 +781,7 @@ def run(mid, down_pics, down_loc, db_path, get_update=True, get_collect=True, ge
     get_his_follower(mid, dbproxy)
     if get_update:
         get_his_updates(mid, down_pics=down_pics, down_loc=down_loc, db_proxy=dbproxy)
+    dbproxy.flag_one_author(mid)
 
     pass
 
